@@ -10,3 +10,7 @@ dist/
 __pycache__/
 .venv/
 apps/web/tsconfig.tsbuildinfo
+
+# Seeded design canvas output (~2.5MB payload) — regenerate from design/*.dc.html
+design/*.html
+!design/*.dc.html

@@ -1,0 +1,14 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",          "x": 0,    "y": 0,    "w": 1440, "h": 980, "title": "Chat — neuro-symbolic answer" },
+    { "file": "FastPath.dc.html",      "x": 0,    "y": 1100, "w": 720,  "h": 400, "title": "Fast path" },
+    { "file": "RagAnswer.dc.html",     "x": 800,  "y": 1100, "w": 720,  "h": 600, "title": "RAG with citation" },
+    { "file": "SecurityBlock.dc.html", "x": 1600, "y": 1100, "w": 720,  "h": 480, "title": "Security gate" },
+    { "file": "Architecture.dc.html",  "x": 0,    "y": 1860, "w": 1120, "h": 760, "title": "Query lifecycle" }
+  ],
+  "annotations": [
+    { "id": "note-routes", "x": 1520, "y": 1860, "w": 300, "text": "Route badge colour is consistent everywhere:\n\ngreen  = fast path\nblue   = RAG / SQL\nviolet = neuro-symbolic\nred    = security gate\n\nA user learns to read cost and rigour at a glance." },
+    { "id": "note-hedge", "x": 1520, "y": 2160, "w": 300, "text": "The complex answer deliberately hedges — the rules establish co-occurrence, not causation. Verification enforces that language rather than letting the model overclaim." }
+  ],
+  "launch": { "view": "canvas" }
+}
