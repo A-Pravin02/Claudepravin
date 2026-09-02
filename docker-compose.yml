@@ -33,7 +33,10 @@ services:
     build: ./apps/web
     depends_on: [api]
     environment:
-      VITE_API_BASE: http://localhost:8080
+      # The Vite dev-server proxy runs INSIDE this container, so the target is
+      # the compose service name -- not localhost, which would be this
+      # container itself. The browser still talks to localhost:5173.
+      VITE_API_BASE: http://api:8080
     ports: ["5173:5173"]
 
 volumes:
