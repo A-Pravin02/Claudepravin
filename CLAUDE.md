@@ -111,13 +111,21 @@ plainly what was verified versus what was only written.
 
 ## Current state
 
-- M1.1 complete: schema, RLS tenant isolation, CI green (9/9 tests).
+- M1.1 complete and verified end-to-end. CI green (9/9 tests), and the full
+  Compose stack was confirmed running on the user's Windows machine: images
+  build, Flyway applies both migrations, the API connects as aea_app, and a
+  query with no tenant context returns zero rows rather than every row.
 - Next: M1.2 auth + RBAC, then M1.3 the PDP, then M1.4 audit + web shell.
 - See `docs/architecture/07-milestone-1.md` for exit criteria.
 
 ## Environment limits worth knowing
 
 - No Docker daemon in the Claude Code sandbox, so `docker compose up` cannot
-  be verified there. CI exercises Postgres via a service container.
+  be verified there; CI exercises Postgres via a service container, and the
+  user runs Compose locally. Writing the Dockerfiles blind cost three bugs
+  (missing Dockerfiles entirely, a Vite proxy pointing at localhost inside its
+  own container, and aea_owner lacking database ownership) -- when changing
+  anything under docker/, re-read it adversarially and simulate what can be
+  simulated against the local PostgreSQL.
 - pgvector is not installed in the sandbox; it matters from M3.
 - CI must never call a live model: cost per push, and nondeterministic tests.
