@@ -1,0 +1,40 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: aea
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_dev_only}
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Creates aea_owner and aea_app before anything else runs.
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d aea"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: ./apps/api
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/aea
+      DB_USER: aea_app
+      DB_PASSWORD: aea_app_dev_only
+      DB_MIGRATION_URL: jdbc:postgresql://db:5432/aea
+      DB_MIGRATION_USER: aea_owner
+      DB_MIGRATION_PASSWORD: aea_owner_dev_only
+    ports: ["8080:8080"]
+
+  web:
+    build: ./apps/web
+    depends_on: [api]
+    environment:
+      VITE_API_BASE: http://localhost:8080
+    ports: ["5173:5173"]
+
+volumes:
+  pgdata:

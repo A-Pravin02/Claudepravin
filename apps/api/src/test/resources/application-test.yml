@@ -1,0 +1,13 @@
+# Points at a real local PostgreSQL 16. Testcontainers is deliberately not used
+# because the CI sandbox has no Docker daemon; CI provides Postgres as a
+# service container instead.
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/aea_test}
+    username: ${DB_USER:aea_app}
+    password: ${DB_PASSWORD:aea_app_dev_only}
+  flyway:
+    url: ${DB_MIGRATION_URL:jdbc:postgresql://localhost:5432/aea_test}
+    user: ${DB_MIGRATION_USER:aea_owner}
+    password: ${DB_MIGRATION_PASSWORD:aea_owner_dev_only}
+    clean-disabled: false

@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: aea-api
+
+  # SECURITY-CRITICAL: the runtime connects as aea_app, which has neither
+  # BYPASSRLS nor table ownership. Connecting as aea_owner would silently
+  # disable tenant isolation for the whole platform.
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/aea}
+    username: ${DB_USER:aea_app}
+    password: ${DB_PASSWORD:aea_app_dev_only}
+    hikari:
+      maximum-pool-size: 10
+      # Connections are reused across tenants. app.tenant_id is therefore set
+      # with SET LOCAL inside each transaction so it is discarded at commit,
+      # never leaking a tenant into the next borrower of the connection.
+      pool-name: aea-app-pool
+
+  flyway:
+    enabled: true
+    # Migrations run as the owner; the app never holds DDL rights.
+    url: ${DB_MIGRATION_URL:jdbc:postgresql://localhost:5432/aea}
+    user: ${DB_MIGRATION_USER:aea_owner}
+    password: ${DB_MIGRATION_PASSWORD:aea_owner_dev_only}
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+server:
+  port: ${API_PORT:8080}
+  error:
+    include-message: never      # no internal detail in error bodies
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    root: INFO
+    com.aea: DEBUG
