@@ -12,14 +12,45 @@ answers before returning them.
 Design set: `docs/architecture/` (start at `00-overview.md`), security in
 `docs/security/`, unproven claims in `docs/research/open-questions.md`.
 
-## No neural networks are trained here
+## Where models come from (OPEN DECISION)
 
-Every neural component is inference against a pretrained model over an API.
-There is no training, no GPU, no dataset for training. The complexity engine,
-risk engine, and rule engine use no model at all. If a request seems to ask
-for training a model, check `docs/SETUP.md` before acting -- the answer is
-almost certainly a learned router in V3, trained on the audit log the system
-produces as a byproduct, and not part of the MVP.
+The **answer path** uses pretrained models over an API. Nothing in the request
+path is trained by us. The complexity engine, risk engine, and rule engine use
+no model at all -- they are deterministic code.
+
+Separately, the user has said they want to train a model. The cost analysis
+was presented (from-scratch pretraining: ~$200-1k for a 125M model that is
+factually useless, ~$100k-500k for a 7B model roughly matching Llama-2-7B).
+Two candidate scopes, **not yet settled** -- confirm before building either:
+
+- **Specialized models** (recommended): a small intent/complexity classifier,
+  a fact-extraction model, a reranker. Each is trainable on one GPU in hours
+  to days, each measurably improves the product, and the answer path stays
+  grounded so hallucination goes down.
+- **From-scratch pretraining**: a nanoGPT-style ~125M transformer in
+  `ai/pretrain/`. Buildable, and a legitimate learning/research track, but it
+  will not answer enterprise questions usefully and would run alongside the
+  product rather than inside it.
+
+Note the tension on record: the user's stated goal is *fewer* hallucinations,
+and a small self-trained model produces substantially more of them than a
+hosted frontier model. Grounding (retrieval + citations + rules +
+verification) is what reduces hallucination here, not model ownership.
+
+## Model tiers (answer path)
+
+Maps to `ModelTier` in the router's ExecutionPlan:
+
+| Tier | Model ID | $/1M in | $/1M out |
+| --- | --- | --- | --- |
+| CHEAP (fast path) | `claude-haiku-4-5` | $1.00 | $5.00 |
+| STANDARD (RAG) | `claude-sonnet-5` | $2.00 | $10.00 |
+| REASONING (neuro-symbolic) | `claude-opus-5` | $5.00 | $25.00 |
+
+Java SDK: `com.anthropic.*`. Auth resolves `ANTHROPIC_API_KEY`, then
+`ANTHROPIC_AUTH_TOKEN`, then an `ant auth login` profile -- an unset env var
+does not mean no credentials. Never hardcode a model ID outside the
+`model-gateway` module; the whole point of R1 is provider-agnosticism.
 
 ## Architectural decisions already ruled on
 
