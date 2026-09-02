@@ -13,6 +13,10 @@ db-init:   ## Create roles + databases on a locally installed PostgreSQL
 	psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f docker/postgres/init/00-roles.sql
 	psql -U postgres -d postgres -c "CREATE DATABASE aea OWNER aea_owner;"      || true
 	psql -U postgres -d postgres -c "CREATE DATABASE aea_test OWNER aea_owner;" || true
+	@# aea_owner must own the database, not just the schema: CREATE EXTENSION
+	@# needs the database-level CREATE privilege.
+	psql -U postgres -d aea      -c "GRANT ALL ON SCHEMA public TO aea_owner;"
+	psql -U postgres -d aea_test -c "GRANT ALL ON SCHEMA public TO aea_owner;"
 
 db-reset:  ## Drop and recreate the local databases
 	psql -U postgres -d postgres -c "DROP DATABASE IF EXISTS aea;"

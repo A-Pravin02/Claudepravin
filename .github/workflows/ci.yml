@@ -24,13 +24,33 @@ jobs:
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: "21", cache: maven }
 
+      # The service container creates aea_test owned by postgres, and it cannot
+      # mount docker-entrypoint-initdb.d (the repo is not checked out when the
+      # service starts), so roles are provisioned here instead.
+      #
+      # aea_owner must own the DATABASE, not merely have rights on the schema:
+      # CREATE EXTENSION requires the database-level CREATE privilege. Schema
+      # grants alone are what broke run #1.
       - name: Provision database roles
         env: { PGPASSWORD: postgres }
         run: |
           psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 \
             -f docker/postgres/init/00-roles.sql
+          psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 \
+            -c 'ALTER DATABASE aea_test OWNER TO aea_owner;'
           psql -h localhost -U postgres -d aea_test -v ON_ERROR_STOP=1 \
             -c 'GRANT ALL ON SCHEMA public TO aea_owner;'
+
+      # Guards against the runtime role ever being granted more than it needs.
+      # A green test suite proves nothing if aea_app can bypass RLS.
+      - name: Assert the runtime role is not privileged
+        env: { PGPASSWORD: postgres }
+        run: |
+          psql -h localhost -U postgres -d aea_test -v ON_ERROR_STOP=1 -tA -c \
+            "SELECT CASE WHEN rolbypassrls OR rolsuper OR rolcreatedb
+                         THEN 'FAIL: aea_app is over-privileged'
+                         ELSE 'ok' END
+             FROM pg_roles WHERE rolname='aea_app';" | grep -qx ok
 
       # Runs migrations, the ArchUnit boundary rules, and the RLS suite.
       - name: Build and test
