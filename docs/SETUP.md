@@ -74,6 +74,40 @@ make web          # terminal 2
 `CREATE EXTENSION` needs the database-level CREATE privilege, and granting
 only schema rights is what broke CI run #1.
 
+## Demo accounts
+
+Seeded by `DemoDataSeeder` under the `demo` profile (active by default
+locally). Password for all of them: **`demo1234`**.
+
+These are worthless outside a local demo, and the seeder is profile-gated so it
+can never run in a deployment holding real data.
+
+| Email | Role | Notable |
+| --- | --- | --- |
+| `admin@techstore.test` | ORG_ADMIN | Manages users, rules, data sources |
+| `asha@techstore.test` | MANAGER | Scoped to region Chennai |
+| `vikram@techstore.test` | MANAGER | Scoped to region Bengaluru |
+| `hr@techstore.test` | HR_MANAGER | **The only holder of READ_SALARY** |
+| `sam@techstore.test` | EMPLOYEE | Policy documents only |
+| `view@techstore.test` | VIEWER | Read-only, non-sensitive |
+| `bo@rivalcorp.test` | ORG_ADMIN | **Different tenant** — the isolation target |
+| `kai@rivalcorp.test` | EMPLOYEE | Different tenant |
+
+Try it:
+
+```bash
+curl -s localhost:8080/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"asha@techstore.test","password":"demo1234"}'
+```
+
+Then call `/api/v1/me` with the returned `accessToken` as
+`Authorization: Bearer <token>` to see the roles and permissions in force.
+
+Note what Asha does *not* have: `READ_SALARY`. No system role grants it, so
+"show me all employee salaries" is denied structurally rather than by a special
+case in application code.
+
 ## Verifying the security foundation
 
 The point of Milestone 1 is that tenant isolation is enforced by PostgreSQL,
@@ -138,3 +172,11 @@ BYPASSRLS/superuser, or the app is connecting as `aea_owner`. Check
 **`SET LOCAL app.tenant_id = ?` syntax error** -- PostgreSQL's SET takes no
 bind parameters. Use `set_config('app.tenant_id', ?, true)`, which is also
 injection-safe.
+
+**Login returns 401 for a user you know exists** -- check the app is running
+with the `demo` profile (`SPRING_PROFILES_ACTIVE=demo`), and look for
+"Demo seed complete" in the startup log.
+
+**The API refuses to start, naming `aea_owner`** -- working as intended. The
+application must connect as `aea_app`; the owner bypasses its own RLS policies
+and would silently disable tenant isolation. Set `DB_USER=aea_app`.

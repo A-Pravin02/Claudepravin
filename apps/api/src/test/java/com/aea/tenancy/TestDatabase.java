@@ -34,7 +34,14 @@ final class TestDatabase {
 
     private TestDatabase() {}
 
-    /** Idempotent: migrates, then seeds two tenants if they are absent. */
+    /**
+     * Idempotent: migrates, then seeds two tenants if they are absent.
+     *
+     * The fixture users use dedicated addresses so they never collide with the
+     * demo users DemoDataSeeder creates -- a collision would leave the demo
+     * accounts holding this fixture's unusable password hash, and every login
+     * test would fail for a reason that has nothing to do with login.
+     */
     static synchronized void ensureReady() throws SQLException {
         if (ready) return;
 
@@ -49,8 +56,8 @@ final class TestDatabase {
         // each insert must declare the tenant it acts for.
         try (Connection c = DriverManager.getConnection(URL, OWNER_USER, OWNER_PASS);
              Statement s = c.createStatement()) {
-            seedTenant(s, TENANT_A, "TechStore", "techstore", "asha@techstore.test", "Asha");
-            seedTenant(s, TENANT_B, "RivalCorp", "rivalcorp", "bo@rivalcorp.test", "Bo");
+            seedTenant(s, TENANT_A, "TechStore", "techstore", "rls-fixture-a@techstore.test", "RLS Fixture A");
+            seedTenant(s, TENANT_B, "RivalCorp", "rivalcorp", "rls-fixture-b@rivalcorp.test", "RLS Fixture B");
         }
         ready = true;
     }

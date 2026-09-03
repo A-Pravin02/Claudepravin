@@ -2,6 +2,11 @@ spring:
   application:
     name: aea-api
 
+  profiles:
+    # 'demo' seeds the TechStore users. Harmless locally, and must be off
+    # anywhere holding real data.
+    active: ${SPRING_PROFILES_ACTIVE:demo}
+
   # SECURITY-CRITICAL: the runtime connects as aea_app, which has neither
   # BYPASSRLS nor table ownership. Connecting as aea_owner would silently
   # disable tenant isolation for the whole platform.
@@ -24,6 +29,17 @@ spring:
     password: ${DB_MIGRATION_PASSWORD:aea_owner_dev_only}
     locations: classpath:db/migration
     baseline-on-migrate: false
+
+aea:
+  auth:
+    # SECURITY-CRITICAL: must be at least 32 bytes; the app refuses to start
+    # otherwise rather than issue forgeable tokens. Generate with:
+    #   openssl rand -base64 48
+    # The default below is a development value and is public in this repo.
+    # It must be replaced by an injected secret in any real deployment.
+    jwt-secret: ${JWT_SECRET:dev-only-insecure-secret-replace-me-000000000000}
+    access-ttl-seconds: ${JWT_ACCESS_TTL_SECONDS:900}
+    refresh-ttl-seconds: ${JWT_REFRESH_TTL_SECONDS:1209600}
 
 server:
   port: ${API_PORT:8080}
